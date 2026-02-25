@@ -1,0 +1,19 @@
+Write-Host "--- [ 1. ข้อมูลระบบปฏิบัติการ ] ---" -ForegroundColor Cyan
+Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, InstallDate | Format-Table
+
+Write-Host "--- [ 2. รายละเอียด Disk และชั่วโมงการใช้งาน ] ---" -ForegroundColor Cyan
+Get-PhysicalDisk | ForEach-Object {
+    $disk = $_
+    $stats = $disk | Get-StorageReliabilityCounter
+    [PSCustomObject]@{
+        DeviceID     = $disk.DeviceId
+        Model        = $disk.Model
+        "Size(GB)"   = [int]($disk.Size / 1GB)
+        Health       = $disk.HealthStatus
+        "PowerOnHrs" = $stats.PowerOnHours
+        "Wear(%)"    = $stats.WearoutPercentage
+    }
+} | Format-Table -AutoSize
+
+Write-Host "--- [ 3. ประวัติการเปิดเครื่องครั้งแรก (Event Log) ] ---" -ForegroundColor Cyan
+Get-WinEvent -FilterHashtable @{LogName='System'; Id=6005} -MaxEvents 5 | Select-Object TimeCreated | Format-Table
